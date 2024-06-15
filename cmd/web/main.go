@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"snippetbox/internal/models"
 
 	"github.com/fatih/color"
 
@@ -18,6 +19,7 @@ var errorL = color.New(color.FgRed).Sprint("ERROR\t")
 type application struct {
 	errorLog *log.Logger
 	infoLog  *log.Logger
+	snippets *models.SnippetModel
 }
 
 func main() {
@@ -44,6 +46,7 @@ func main() {
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
+		snippets: &models.SnippetModel{DB: db},
 	}
 
 	// Initialize a new http.Server struct.
