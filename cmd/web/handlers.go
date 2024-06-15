@@ -6,15 +6,11 @@ import (
 	"net/http"
 	"snippetbox/internal/models"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	// If url path is not root.
-	if r.URL.Path != "/" {
-		app.notFound(w)
-		return
-	}
-
 	snippets, err := app.snippets.Latest()
 	if err != nil {
 		app.serverError(w, err)
@@ -31,12 +27,10 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 // View snippets handler
 func (app *application) snipperView(w http.ResponseWriter, r *http.Request) {
-	// Extract the value of the id from the url query parameter and
-	// convert to integer.
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
-	// If an error is received during conversion or 
-	// id < 1 return not found.
-	if err != nil || id < 1 {
+	// Extract URL param
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
 		app.notFound(w)
 		return
 	}
@@ -57,8 +51,13 @@ func (app *application) snipperView(w http.ResponseWriter, r *http.Request) {
 	app.render(w, http.StatusOK, "view.tmpl", data)
 }
 
-// Create new snippet handler
+// Create snippet form handler
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Display the form for creating a new snippet..."))
+}
+
+// Create new snippet handler
+func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
 	// If method is not POST
 	if r.Method != "POST" {
 		// Set header and save 
@@ -76,5 +75,5 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
