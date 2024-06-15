@@ -4,6 +4,7 @@ go 1.22.3
 
 require (
 	github.com/fatih/color v1.17.0
+	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-sql-driver/mysql v1.8.1
 )
 

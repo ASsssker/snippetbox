@@ -6,15 +6,20 @@ import (
 	"net/http"
 	"snippetbox/internal/models"
 	"strconv"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/go-chi/chi/v5"
 )
 
-func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	// If url path is not root.
-	if r.URL.Path != "/" {
-		app.notFound(w)
-		return
-	}
+type snippetCreateForm struct {
+	Title string
+	Content string
+	Expires int
+	FieldErrors map[string]string
+}
 
+func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	snippets, err := app.snippets.Latest()
 	if err != nil {
 		app.serverError(w, err)
@@ -31,12 +36,10 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 // View snippets handler
 func (app *application) snipperView(w http.ResponseWriter, r *http.Request) {
-	// Extract the value of the id from the url query parameter and
-	// convert to integer.
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
-	// If an error is received during conversion or 
-	// id < 1 return not found.
-	if err != nil || id < 1 {
+	// Extract URL param
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
 		app.notFound(w)
 		return
 	}
@@ -57,24 +60,63 @@ func (app *application) snipperView(w http.ResponseWriter, r *http.Request) {
 	app.render(w, http.StatusOK, "view.tmpl", data)
 }
 
-// Create new snippet handler
+// Create snippet form handler
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-	// If method is not POST
-	if r.Method != "POST" {
-		// Set header and save 
-		w.Header().Set("Allow", "POST")
-		app.clientError(w, http.StatusMethodNotAllowed)
+	data := app.newTemplateData(r)
+	data.Form = snippetCreateForm{
+		Expires: 365,
+	}
+
+	app.render(w, http.StatusOK, "create.tmpl", data)
+}
+
+// Create new snippet handler
+func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-	title := "O snail"
-	content := "O snail\nClimb Mount Fuji,\nBut slowly, slowly!\n\n– KobayashiIssa"
-	expires := 7
 
-	id, err := app.snippets.Insert(title, content, expires)
+	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	form := snippetCreateForm{
+		Title: r.PostForm.Get("title"),
+		Content: r.PostForm.Get("content"),
+		Expires: expires,
+		FieldErrors: map[string]string{},
+	}
+
+	if strings.TrimSpace(form.Title) == "" {
+		form.FieldErrors["title"] = "This field cannot be blank"
+	} else if utf8.RuneCountInString(form.Title) > 100 {
+		form.FieldErrors["title"] = "This field cannot be more 100 characters long"
+	}
+
+	if strings.TrimSpace(form.Content) == "" {
+		form.FieldErrors["content"] = "This field cannot be blank"
+	}
+
+	if form.Expires != 1 && form.Expires != 7 && form.Expires != 365 {
+		form.FieldErrors["expires"] = "This field must equal 1, 7, 365"
+	}
+
+	if len(form.FieldErrors) > 0 {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
+		return
+	}
+
+	id, err := app.snippets.Insert(form.Title, form.Content, form.Expires)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
