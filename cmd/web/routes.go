@@ -25,5 +25,5 @@ func (app *application) routes() http.Handler {
 		app.notFound(w)
 	}))
 
-	return app.recoverPanic(app.LogRequest(secureHeaders(mux)))
+	return mux
 }
