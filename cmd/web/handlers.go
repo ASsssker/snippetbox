@@ -10,7 +10,7 @@ import (
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// If url path is not root.
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 
@@ -25,28 +25,27 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// Parse of the template files.
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		app.serverError(w, err)
 		return
 	}
 
 	// Render template.
 	err = ts.ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		app.serverError(w, err)
+		return
 	}
 }
 
 // View snippets handler
-func (a *application) snipperView(w http.ResponseWriter, r *http.Request) {
+func (app *application) snipperView(w http.ResponseWriter, r *http.Request) {
 	// Extract the value of the id from the url query parameter and
 	// convert to integer.
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	// If an error is received during conversion or 
 	// id < 1 return not found.
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 
@@ -54,12 +53,12 @@ func (a *application) snipperView(w http.ResponseWriter, r *http.Request) {
 }
 
 // Create new snippet handler
-func (a *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
+func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	// If method is not POST
 	if r.Method != "POST" {
 		// Set header and save 
 		w.Header().Set("Allow", "POST")
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		app.clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
 
