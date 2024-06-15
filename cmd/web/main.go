@@ -34,22 +34,11 @@ func main() {
 		infoLog: infoLog,
 	}
 
-	// Create new ServeMux router.
-	mux := http.NewServeMux()
-	// Create a file server which serves static files.
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
-	// Register file server handler.
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
-	// Register Handler func.
-	mux.HandleFunc("/", app.home)
-	mux.HandleFunc("/snippet/view", app.snipperView)
-	mux.HandleFunc("/snippet/create", app.snippetCreate)
-
 	// Initialize a new http.Server struct.
 	srv := &http.Server{
 		Addr: *addr,
 		ErrorLog: errorLog,
-		Handler: mux,
+		Handler: app.routes(),
 	}
 	// Use ListenAndServe func to start a new web server.
 	// We pass in tcp socket address and ServeMux router.
