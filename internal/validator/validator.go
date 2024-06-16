@@ -10,10 +10,10 @@ var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9
 
 type Validator struct {
 	NonFieldErrors []string
-	FieldErrors map[string]string
+	FieldErrors    map[string]string
 }
 
-func(v *Validator) Valid() bool {
+func (v *Validator) Valid() bool {
 	return len(v.FieldErrors) == 0 && len(v.NonFieldErrors) == 0
 }
 
@@ -33,7 +33,7 @@ func (v *Validator) CheckField(ok bool, key, message string) {
 }
 
 func (v *Validator) AddNonFieldError(message string) {
-	v.NonFieldErrors = append(v.NonFieldErrors, message)	
+	v.NonFieldErrors = append(v.NonFieldErrors, message)
 }
 
 func NotBlank(value string) bool {
@@ -60,4 +60,3 @@ func MinChars(value string, n int) bool {
 func Matches(value string, rx *regexp.Regexp) bool {
 	return rx.MatchString(value)
 }
-
