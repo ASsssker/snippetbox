@@ -17,8 +17,8 @@ func (app *application) routes() http.Handler {
 		r.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
 		r.Group(func(r chi.Router) {
-			r.Use(app.sessionManager.LoadAndSave)
-			
+			r.Use(app.sessionManager.LoadAndSave, noSurf)
+
 			r.Group(func(r chi.Router) {
 				r.Use(app.requireAuthentication)
 				r.Get("/snippet/create", app.snippetCreate)
