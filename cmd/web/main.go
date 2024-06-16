@@ -8,7 +8,10 @@ import (
 	"net/http"
 	"os"
 	"snippetbox/internal/models"
+	"time"
 
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/fatih/color"
 	"github.com/go-playground/form/v4"
 
@@ -24,6 +27,7 @@ type application struct {
 	snippets *models.SnippetModel
 	templateCahce map[string]*template.Template
 	formDecoder *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -54,6 +58,10 @@ func main() {
 
 	formDecoder := form.NewDecoder()
 
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
 	// Initialize a new instance of application struct.
 	app := &application{
 		errorLog: errorLog,
@@ -61,6 +69,7 @@ func main() {
 		snippets: &models.SnippetModel{DB: db},
 		templateCahce: templateCache,
 		formDecoder: formDecoder,
+		sessionManager: sessionManager,
 	}
 
 	// Initialize a new http.Server struct.

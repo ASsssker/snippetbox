@@ -9,17 +9,22 @@ import (
 func (app *application) routes() http.Handler {
 	// Create new ServeMux router.
 	mux := chi.NewMux()
-	// Use middlewares
-	mux.Use(secureHeaders, app.LogRequest, app.recoverPanic)
 	// Create a file server which serves static files.
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
-	// Register file server handler.
-	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 	// Register Handler func.
-	mux.Get("/", app.home)
-	mux.Get("/snippet/view/{id}", app.snipperView)
-	mux.Get("/snippet/create", app.snippetCreate)
-	mux.Post("/snippet/create", app.snippetCreatePost)
+	mux.Group(func(r chi.Router) {
+		r.Use(secureHeaders, app.LogRequest, app.recoverPanic)
+		r.Handle("/static/*", http.StripPrefix("/static", fileServer))
+
+		r.Group(func(r chi.Router) {
+			r.Use(app.sessionManager.LoadAndSave)
+			r.Get("/", app.home)
+			r.Get("/snippet/view/{id}", app.snipperView)
+			r.Get("/snippet/create", app.snippetCreate)
+			r.Post("/snippet/create", app.snippetCreatePost)
+		})
+	})
+
 	// Set notFound handler
 	mux.NotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
