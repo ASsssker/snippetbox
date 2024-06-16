@@ -23,11 +23,12 @@ var info = color.New(color.FgHiGreen).Sprint("INFO\t")
 var errorL = color.New(color.FgRed).Sprint("ERROR\t")
 
 type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	snippets *models.SnippetModel
-	templateCahce map[string]*template.Template
-	formDecoder *form.Decoder
+	errorLog       *log.Logger
+	infoLog        *log.Logger
+	snippets       *models.SnippetModel
+	users          *models.UserModel
+	templateCahce  map[string]*template.Template
+	formDecoder    *form.Decoder
 	sessionManager *scs.SessionManager
 }
 
@@ -65,11 +66,12 @@ func main() {
 
 	// Initialize a new instance of application struct.
 	app := &application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		snippets: &models.SnippetModel{DB: db},
-		templateCahce: templateCache,
-		formDecoder: formDecoder,
+		errorLog:       errorLog,
+		infoLog:        infoLog,
+		snippets:       &models.SnippetModel{DB: db},
+		users:          &models.UserModel{DB: db},
+		templateCahce:  templateCache,
+		formDecoder:    formDecoder,
 		sessionManager: sessionManager,
 	}
 
@@ -79,12 +81,12 @@ func main() {
 
 	// Initialize a new http.Server struct.
 	srv := &http.Server{
-		Addr:     *addr,
-		ErrorLog: errorLog,
-		Handler:  app.routes(),
-		TLSConfig: tlsConfig,
-		IdleTimeout: time.Minute,
-		ReadTimeout: 5 * time.Second,
+		Addr:         *addr,
+		ErrorLog:     errorLog,
+		Handler:      app.routes(),
+		TLSConfig:    tlsConfig,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 	// Use ListenAndServe func to start a new web server.

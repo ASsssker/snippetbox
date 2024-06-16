@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-playground/form/v4"
+	"github.com/justinas/nosurf"
 )
 
 // The serverError helpers writes an error and stack trace to the errorLog,
@@ -45,7 +46,7 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 		app.serverError(w, err)
 		return
 	}
-	
+
 	w.WriteHeader(status)
 	buf.WriteTo(w)
 }
@@ -53,15 +54,17 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 func (app *application) newTemplateData(r *http.Request) *templateData {
 	return &templateData{
 		CurrentYear: time.Now().Year(),
-		Flash: app.sessionManager.PopString(r.Context(), "flash"),
+		Flash:       app.sessionManager.PopString(r.Context(), "flash"),
+		IsAuthenticated: app.isAuthenticated(r),
+		CSRFToken: nosurf.Token(r),
 	}
 }
 
 func (app *application) decodePostForm(r *http.Request, dst any) error {
 	if err := r.ParseForm(); err != nil {
 		return err
-	}	
-	
+	}
+
 	if err := app.formDecoder.Decode(&dst, r.PostForm); err != nil {
 		var invalidDecoderError *form.InvalidDecoderError
 		if errors.As(err, &invalidDecoderError) {
@@ -71,4 +74,8 @@ func (app *application) decodePostForm(r *http.Request, dst any) error {
 	}
 
 	return nil
+}
+
+func (app *application) isAuthenticated(r *http.Request) bool {
+	return app.sessionManager.Exists(r.Context(), "authenticatedUserID")
 }

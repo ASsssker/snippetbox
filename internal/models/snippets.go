@@ -7,8 +7,8 @@ import (
 )
 
 type Snippet struct {
-	ID int
-	Title string
+	ID      int
+	Title   string
 	Content string
 	Created time.Time
 	Expires time.Time
@@ -40,7 +40,7 @@ func (m *SnippetModel) Insert(title, content string, expires int) (int, error) {
 func (m *SnippetModel) Get(id int) (*Snippet, error) {
 	stmt := `SELECT id, title, content, created, expires FROM snippets
 			WHERE expires > UTC_TIMESTAMP() AND id = ?`
-	
+
 	row := m.DB.QueryRow(stmt, id)
 	s := &Snippet{}
 
