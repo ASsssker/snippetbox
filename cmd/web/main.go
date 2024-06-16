@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"html/template"
@@ -8,8 +9,12 @@ import (
 	"net/http"
 	"os"
 	"snippetbox/internal/models"
+	"time"
 
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/fatih/color"
+	"github.com/go-playground/form/v4"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -22,6 +27,8 @@ type application struct {
 	infoLog  *log.Logger
 	snippets *models.SnippetModel
 	templateCahce map[string]*template.Template
+	formDecoder *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -50,12 +57,24 @@ func main() {
 		errorLog.Fatal(err)
 	}
 
+	formDecoder := form.NewDecoder()
+
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
 	// Initialize a new instance of application struct.
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
 		snippets: &models.SnippetModel{DB: db},
 		templateCahce: templateCache,
+		formDecoder: formDecoder,
+		sessionManager: sessionManager,
+	}
+
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
 
 	// Initialize a new http.Server struct.
@@ -63,11 +82,15 @@ func main() {
 		Addr:     *addr,
 		ErrorLog: errorLog,
 		Handler:  app.routes(),
+		TLSConfig: tlsConfig,
+		IdleTimeout: time.Minute,
+		ReadTimeout: 5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 	// Use ListenAndServe func to start a new web server.
 	// We pass in tcp socket address and ServeMux router.
 	infoLog.Printf("Starting server on %s", *addr)
-	err = srv.ListenAndServe()
+	err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	errorLog.Fatal(err)
 }
 
