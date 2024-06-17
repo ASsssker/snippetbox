@@ -16,6 +16,7 @@ func (app *application) routes() http.Handler {
 	mux.Group(func(r chi.Router) {
 		r.Use(secureHeaders, app.LogRequest, app.recoverPanic)
 		r.Handle("/static/*", fileServer)
+		r.Get("/ping", ping)
 
 		r.Group(func(r chi.Router) {
 			r.Use(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
