@@ -25,8 +25,8 @@ var errorL = color.New(color.FgRed).Sprint("ERROR\t")
 type application struct {
 	errorLog       *log.Logger
 	infoLog        *log.Logger
-	snippets       *models.SnippetModel
-	users          *models.UserModel
+	snippets       models.SnippetModelInterface
+	users          models.UserModelsInterface
 	templateCahce  map[string]*template.Template
 	formDecoder    *form.Decoder
 	sessionManager *scs.SessionManager
