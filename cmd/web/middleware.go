@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -14,6 +15,7 @@ func secureHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "deny")
 		w.Header().Set("X-XSS-Protection", "0")
+		w.Header().Set("Cache-Control", "max-age=3600")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -60,4 +62,27 @@ func noSurf(next http.Handler) http.Handler {
 	})
 	
 	return csrfHandler
+}
+
+func (app *application) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+		if id == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		exitsts, err := app.users.Exists(id)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		if exitsts {
+			ctx := context.WithValue(r.Context(), isAuthenticatedContextKey, true)
+			r = r.WithContext(ctx)
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

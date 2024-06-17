@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"snippetbox/ui"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -10,14 +11,15 @@ func (app *application) routes() http.Handler {
 	// Create new ServeMux router.
 	mux := chi.NewMux()
 	// Create a file server which serves static files.
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
+	fileServer := http.FileServer(http.FS(ui.Files))
 	// Register Handler func.
 	mux.Group(func(r chi.Router) {
 		r.Use(secureHeaders, app.LogRequest, app.recoverPanic)
-		r.Handle("/static/*", http.StripPrefix("/static", fileServer))
+		r.Handle("/static/*", fileServer)
+		r.Get("/ping", ping)
 
 		r.Group(func(r chi.Router) {
-			r.Use(app.sessionManager.LoadAndSave, noSurf)
+			r.Use(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
 
 			r.Group(func(r chi.Router) {
 				r.Use(app.requireAuthentication)
