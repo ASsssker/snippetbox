@@ -17,7 +17,7 @@ func (app *application) routes() http.Handler {
 		r.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
 		r.Group(func(r chi.Router) {
-			r.Use(app.sessionManager.LoadAndSave, noSurf)
+			r.Use(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
 
 			r.Group(func(r chi.Router) {
 				r.Use(app.requireAuthentication)
